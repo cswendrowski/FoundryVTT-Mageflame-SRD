@@ -8,3 +8,9 @@
 # FoundryVTT 13th Age SRD
 
 A scraped import of SRD monsters from https://www.13thagesrd.com/monsters/ for https://gitlab.com/asacolips-projects/foundry-mods/archmage/tree/master, provided under the Community Use License
+
+
+## Install
+```
+https://raw.githubusercontent.com/cswendrowski/FoundryVTT-13th-Age-SRD/master/module.json
+```
