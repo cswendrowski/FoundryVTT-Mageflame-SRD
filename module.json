@@ -1,68 +1,23 @@
 {
-  "name": "13th-age-expanded",
-  "title": "13th Age Expanded",
-  "description": "A small set of additional features for https://gitlab.com/asacolips-projects/foundry-mods/archmage/tree/master",
-  "version": "1.5.0",
+  "name": "13th-age-srd-monsters",
+  "title": "13th Age SRD Monsters",
+  "description": "A scraped import of SRD monsters from https://www.13thagesrd.com/monsters/ for https://gitlab.com/asacolips-projects/foundry-mods/archmage/tree/master",
+  "version": "0.1.0",
   "minimumCoreVersion": "0.4.4",
   "author": "Cody Swendrowski <cody@swendrowski.us>",
-  "scripts": [
-    "./13th-age-expanded.js"
-  ],
-  "styles": [
-    "./13th-age-expanded.css"
-  ],
-  "languages": [
-    {
-      "lang": "en",
-      "name": "English",
-      "path": "languages/en.json"
-    }
-  ],
+  "scripts": [],
+  "styles": [],
+  "languages": [],
   "packs": [
     {
-      "name": "briarelves",
-      "label": "Briar Elves",
+      "name": "srd-monsters",
+      "label": "SRD Monsters",
       "system": "archmage",
-      "path": "./packs/briarelves.db",
-      "entity": "Actor"
-    },
-    {
-      "name": "chaosmagetables",
-      "label": "Chaos Mage Tables",
-      "system": "archmage",
-      "path": "./packs/chaosmagetables.db",
-      "entity": "RollTable"
-    },
-    {
-      "name": "demonsandhell",
-      "label": "Demons and Hell",
-      "system": "archmage",
-      "path": "./packs/demonsandhell.db",
-      "entity": "Actor"
-    },
-    {
-      "name": "greatghoul",
-      "label": "Great Ghoul",
-      "system": "archmage",
-      "path": "./packs/greatghoul.db",
-      "entity": "Actor"
-    },
-    {
-      "name": "hellmarsh",
-      "label": "Hell Marsh",
-      "system": "archmage",
-      "path": "./packs/hellmarsh.db",
-      "entity": "Actor"
-    },
-    {
-      "name": "kobolds",
-      "label": "Kobolds",
-      "system": "archmage",
-      "path": "./packs/kobolds.db",
+      "path": "./packs/srd-monsters.db",
       "entity": "Actor"
     }
   ],
-  "url": "https://github.com/cswendrowski/FoundryVTT-13th-Age-Expanded",
-  "manifest": "https://raw.githubusercontent.com/cswendrowski/FoundryVTT-13th-Age-Expanded/master/module.json",
-  "download": "https://github.com/cswendrowski/FoundryVTT-13th-Age-Expanded/archive/master.zip"
+  "url": "https://github.com/cswendrowski/FoundryVTT-13th-Age-SRD",
+  "manifest": "https://raw.githubusercontent.com/cswendrowski/FoundryVTT-13th-SRD/master/module.json",
+  "download": "https://github.com/cswendrowski/FoundryVTT-13th-SRD/archive/master.zip"
 }
