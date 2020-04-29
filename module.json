@@ -3,7 +3,7 @@
   "title": "13th Age SRD Monsters",
   "description": "A scraped import of SRD monsters from https://www.13thagesrd.com/monsters/ for https://gitlab.com/asacolips-projects/foundry-mods/archmage/tree/master",
   "version": "0.1.0",
-  "minimumCoreVersion": "0.4.4",
+  "minimumCoreVersion": "0.5.2",
   "author": "Cody Swendrowski <cody@swendrowski.us>",
   "scripts": [],
   "styles": [],
