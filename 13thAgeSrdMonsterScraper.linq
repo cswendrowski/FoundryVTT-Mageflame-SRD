@@ -43,6 +43,7 @@
 void Main()
 {
 	var monsters = new SrdMonsterScraper().Scrape();
+	//monsters.Dump();
 	MonsterConverter.ConvertMonstersToJson(monsters);
 }
 
@@ -64,35 +65,86 @@ public class SrdMonsterScraper
 		var document = web.Load(url);
 		var response = document.DocumentNode;
 		
-		var incorrectSrdMonsterNames = new List<string> { "Hydra", "Goblin", "Human", "Kobold", "Lizardman", "Medusa", "Orc", "Troglodyte", "Mummy", "Zombie", "Gnoll", "Half-Orc", "Skeleton" };
+		var incorrectMonsters = new List<string>()
+		{
+			"Dire Bat",
+			"Hell Imp",
+			"Drow Sword Maiden"
+		};
+		
+		var incorrectMonsterHeaders = new Dictionary<string, string>
+		{ 
+			{ "Ankheg", "Azer Soldier" },
+			{ "Basilisk", "Swarm of Bats" },
+			{ "Drider", "Drow Spider-Mage" },
+			{ "Harpy", "Watch Skull" },
+			{ "Hellhound", "Human Thug" },
+			{ "Hungry Star", "Five-Headed Hydra" },
+			{ "Minotaur", "Swaysong Naga" },
+			{ "Mummy", "Swaysong Naga" },
+			{ "Otyugh", "Pixie Warrior" },
+			{ "Owlbear", "Pixie Warrior" },
+			{ "Phase Spider", "Pixie Warrior" },
+			{ "Rakshasa", "Splotchcap" },
+			{ "Tarrasque", "Avenging Orb" },
+			{ "Troll", "Vampire" },
+			{ "Whispering Prophet", "Zombie Shuffler" },
+			{ "Wibble", "Zombie Shuffler" },
+			{ "Wight", "Zombie Shuffler" },
+			{ "Wraith", "Zombie Shuffler" },
+			{ "Wyvern", "Zombie Shuffler" },
+		};
+		
+		var tablesToSkip = new List<string>() {
+			"Save Penalty",
+			"Icon-centered Abilities",
+			"Demonic Ability",
+			"Devil Ability",
+			"Variable Waiting Period",
+			"Dragon Ability",
+			"Ooze Ability",
+		};
 
-		var monsterNames = response.CssSelect("h4 > span").Select(x => x.InnerText).SkipWhile(x => x != "Wrecker").Skip(1)
-			.Where(x => !incorrectSrdMonsterNames.Contains(x)).ToList();
+		var monsterNames = response.CssSelect("h4 > span").Select(x => x.InnerText)
+			//.Where(x => !incorrectMonsters.Contains(x))
+			//.SkipWhile(x => x != "Wrecker").Skip(1)
+			.ToList();
 			
-		var derro = monsterNames.IndexOf("Derro");
-		monsterNames.Insert(derro, "Derro Sage");
-		monsterNames.Insert(derro, "Derro Maniac");
-		monsterNames.Remove("Derro");
+		foreach (var incorrectlyHeaderedName in incorrectMonsterHeaders)
+		{
+			var insertBefore = monsterNames.IndexOf(incorrectlyHeaderedName.Value);
+			monsterNames.Insert(insertBefore, incorrectlyHeaderedName.Key);
+		}
+			
+		//monsterNames.Dump();
 			
 		var monsterDetails = response
 			.CssSelect("table")
-			.SkipWhile(x => !x.InnerText.Contains("Size/Strength regular, large, or huge; Level level; Role role; Type type"))
+			//.SkipWhile(x => !x.InnerText.Contains("Size/Strength regular, large, or huge; Level level; Role role; Type type"))
 			.Skip(1)
-			.Where(x => !x.InnerText.Contains("Save Penalty"))
-			.TakeWhile( x => !x.InnerText.Contains("Speed"))
+			.Where(x => x.InnerText.Contains("ACPDMDHP"))
+			.Where(x => !tablesToSkip.Any(toSkip => x.InnerText.StartsWith(toSkip)))
+			.TakeWhile( x => !x.InnerText.Contains("Section 15"))
 			.ToList();
 
-		$"{monsterNames.Count} monster names, {monsterDetails.Count} details".Dump();
+		//$"{monsterNames.Count} monster names, {monsterDetails.Count} details".Dump();
 
 		var failures = 0;
 		var toReturn = new List<Monster>();
 		for (int x = 0; x < monsterNames.Count; x++)
-		//for (int x = 1; x < 2; x++)
+		//for (int x = 200; x < monsterNames.Count; x++)
 		{
 			x.Dump();
+			if (incorrectMonsters.Contains(monsterNames[x]))
+			{
+				"Skipping incorrect monster".Dump();
+				continue;
+			}
 			try
 			{
-				toReturn.Add(ScrapeMonster(monsterNames[x], monsterDetails[x]));
+				var monster = ScrapeMonster(monsterNames[x], monsterDetails[x]);
+				//monster.Dump();
+				toReturn.Add(monster);
 			}
 			catch (Exception e)
 			{
@@ -113,11 +165,16 @@ public class SrdMonsterScraper
 			Name = name
 		};
 
-		var tableInfo = table.ChildNodes[1];
+		var tableInfo = table.ChildNodes[0].ChildNodes[0];
+		
+		if (tableInfo.ChildNodes.Count < 4)
+		{
+			throw new Exception("Not enough elements in table!");
+		}
 
-		var standardInfo = tableInfo.ChildNodes[1];
-		var attacksInfo = tableInfo.ChildNodes[3].ChildNodes[1];
-		var defenseInfo = tableInfo.ChildNodes[7];
+		var standardInfo = tableInfo.ChildNodes[0];
+		var attacksInfo = tableInfo.ChildNodes[1];
+		var defenseInfo = tableInfo.ChildNodes[3];
 
 		GetStandardInfo(monster, standardInfo);
 		GetDefenses(monster, defenseInfo);
@@ -132,7 +189,7 @@ public class SrdMonsterScraper
 		Attack currentAttack = null;
 		bool areTraitsNastierSpecials = false;
 
-		for (int x = 1; x <= attacksInfo.ChildNodes.Count - 1; x += 2)
+		for (int x = 0; x <= attacksInfo.ChildNodes.Count - 1; x ++)
 		{
 			var line = attacksInfo.ChildNodes[x];
 			ProcessLine(monster, attacksInfo, ref currentAttack, ref areTraitsNastierSpecials, line);
@@ -144,7 +201,21 @@ public class SrdMonsterScraper
 	{
 		"".Dump();
 		
-		var linesToIgnore = new List<string>() { "And it has one additional ability" };
+		var linesToIgnore = new List<string>() {
+			"And it has one additional ability",
+			"Last Gasp Failed Save Effects",
+			"A slime devil seems unremarkable and innocuous, so downplay its significance whenever describing it, especially when it has company. When mortals actually decide to attack or capture a honey devil, it’s probably slippery enough to escape at the last minute, maybe through a hidden exit.",
+			"Level 6 Void Beast",
+			"AC 22",
+			"PD 20",
+			"MD 18",
+			"HP 27",
+			"On Holy Ground",
+			"Fungal attack—Make ONE fungal attack"
+		};
+		
+		var basiliskInfo = new List<string>() { "Green Basilisk", "Red Basilisk", "Black Basilisk", "White Basilisk" };
+		var currentBasiliskType = string.Empty;
 
 		line.InnerHtml.Dump();
 		
@@ -152,7 +223,28 @@ public class SrdMonsterScraper
 		{
 			$"Ignoring line".Dump();
 		}
-		else if ((!line.InnerHtml.StartsWith("<i>") || line.InnerText.Contains("[Special trigger]") || line.InnerText.Contains("[Group ability]")) && (line.InnerHtml.Contains("+") && line.InnerHtml.Contains("vs")) || line.InnerText.Contains("Ranged:"))
+		else if (line.InnerText.Contains("Choose ONE")) {
+			$"Ignoring line".Dump();
+		}
+		else if (line.InnerText.StartsWith("Initiative:"))
+		{
+			"Line is Initiative".Dump();
+			var numberRegex = @"(\d+)";
+			var numberRegexMatches = Regex.Match(line.InnerText, numberRegex);
+
+			if (numberRegexMatches.Success)
+			{
+				monster.Initiative = int.Parse(numberRegexMatches.Groups[1].Value.Trim());
+			}
+		}
+		else if 
+		(
+			(!line.InnerHtml.StartsWith("<i>") || line.InnerText.Contains("[Special trigger]") || line.InnerText.Contains("[Group ability]")) &&
+			(
+				(line.InnerHtml.Contains("+") && line.InnerHtml.Contains("vs")) || 
+				(line.InnerText.Contains("Ranged:") || line.InnerText.StartsWith("C: Banner magic") || line.InnerText.Contains("R:"))
+			)
+		)
 		{
 			if (currentAttack != null)
 			{
@@ -184,7 +276,7 @@ public class SrdMonsterScraper
 				currentAttack.Description += line.InnerText;
 			}
 		}
-		else if (line.InnerHtml.Contains("</i>"))
+		else if (line.InnerHtml.Contains("</i>") || line.InnerText.StartsWith("Resist fire"))
 		{
 			"Line is a Trait".Dump();
 			
@@ -193,6 +285,11 @@ public class SrdMonsterScraper
 				Name = WebUtility.HtmlDecode(line.InnerText.Split(':').First().Trim()),
 				Effect = ProcessStringWithHtmlAndRolls(line.InnerText.Split(':').Last().Trim())
 			};
+			
+			if (monster.Name == "Basilisk" && !string.IsNullOrEmpty(currentBasiliskType))
+			{
+				trait.Name = currentBasiliskType + " " + trait.Name;
+			}
 
 			if (areTraitsNastierSpecials)
 			{
@@ -245,6 +342,52 @@ public class SrdMonsterScraper
 		{
 			MergeOrAddTrait("Ghostly", "Ghostly", monster, line);
 		}
+		else if (line.InnerText.StartsWith("If a chaos beast and a chaos brute combine to create a chaos behemoth"))
+		{
+			MergeOrAddTrait("Chaos combined", "Chaos combined", monster, line);	
+		}
+		else if (line.InnerText.StartsWith("While on “holy ground”"))
+		{
+			MergeOrAddTrait("On Holy Ground", "On Holy Ground", monster, line);	
+		}
+		else if (line.InnerText.StartsWith("4. As a standard action the ooze"))
+		{
+			MergeOrAddTrait("Instinctive - Oozes Quickly", "Instinctive - Oozes Quickly", monster, line);
+		}
+		else if (line.InnerText.StartsWith("1. The cubahedron jiggles in place"))
+		{
+			MergeOrAddTrait("Instinctive - Jiggles in Place", "Instinctive - Jiggles in Place", monster, line);
+		}
+		else if (line.InnerText.StartsWith("2. The cubahedron moves"))
+		{
+			MergeOrAddTrait("Instinctive - Moves", "Instinctive - Moves", monster, line);
+		}
+		else if (line.InnerText.StartsWith("3. The cubahedron spits"))
+		{
+			MergeOrAddTrait("Instinctive - Spits", "Instinctive - Spits", monster, line);
+		}
+		else if (line.InnerText.StartsWith("4. The cubahedron flattens"))
+		{
+			MergeOrAddTrait("Instinctive - Flattens", "Instinctive - Flattens", monster, line);
+		}
+		else if (line.InnerText.StartsWith("5. The cubahedron moves"))
+		{
+			MergeOrAddTrait("Instinctive - Moves Creature", "Instinctive - Moves Creature", monster, line);
+		}
+		else if (line.InnerText.StartsWith("6. The cubahedron spits"))
+		{
+			MergeOrAddTrait("Instinctive - Spits Out", "Instinctive - Spits Out", monster, line);
+		}
+		else if (line.InnerText.StartsWith("Jump &amp; Scuttle"))
+		{
+			var trait = new Trait()
+			{
+				Name = "Jump & Scuttle",
+				Effect = WebUtility.HtmlDecode(line.InnerText.Replace("Jump &amp; Scuttle—", ""))
+			};
+
+			monster.Traits.Add(trait);
+		}
 		else if (line.InnerText == "Bite +6; 5 damage")
 		{
 			if (currentAttack != null)
@@ -259,6 +402,25 @@ public class SrdMonsterScraper
 				Damage = "5 damage",
 				Target = "AC"
 			};
+		}
+		else if (line.InnerText == "Tentacles and talons—60 damage")
+		{
+			if (currentAttack != null)
+			{
+				monster.Attacks.Add(currentAttack);
+			}
+			areTraitsNastierSpecials = false;
+
+			currentAttack = new Attack()
+			{
+				Name = "Tentacles and talons",
+				Bonus = 18,
+				Damage = "60 damage",
+				Target = "AC"
+			};
+		}
+		else if (basiliskInfo.Contains(line.InnerText)) {
+			currentBasiliskType = line.InnerText;
 		}
 		else
 		{
@@ -346,7 +508,16 @@ public class SrdMonsterScraper
 			}
 		}
 
-		var attackRegex = @"(.*)(\+ *(\d+)) vs\.* (.*?)[;,](.*)";
+		var attackBonusRegex = @"(\(.*\))\s*vs";
+		var attackBonusRegexMatches = Regex.Match(cleanLine, attackBonusRegex);
+
+		if (attackBonusRegexMatches.Success)
+		{
+			"Removing Attack Bonus".Dump();
+			cleanLine = cleanLine.Replace(attackBonusRegexMatches.Groups[1].Value.Trim(), "");
+		}
+		
+		var attackRegex = @"(.*)(\+ *(\d+)) *vs\.* (.*?)[;,](.*)";
 		var attackRegexMatches = Regex.Match(cleanLine, attackRegex);
 
 		if (attackRegexMatches.Success)
@@ -367,36 +538,32 @@ public class SrdMonsterScraper
 
 	private static void GetDefenses(Monster monster, HtmlNode defense)
 	{
-		monster.AC = int.Parse(defense.ChildNodes[1].InnerText.Trim());
-		monster.PD = int.Parse(defense.ChildNodes[3].InnerText.Trim());
-		monster.MD = int.Parse(defense.ChildNodes[5].InnerText.Trim());
-		monster.HP = int.Parse(defense.ChildNodes[7].InnerText.Replace("(each)", "").Trim());
+		monster.AC = int.Parse(defense.ChildNodes[0].InnerText.Trim());
+		monster.PD = int.Parse(defense.ChildNodes[1].InnerText.Trim());
+		monster.MD = int.Parse(defense.ChildNodes[2].InnerText.Trim());
+		monster.HP = int.Parse(defense.ChildNodes[3].InnerText.Replace("(each)", "").Trim());
 	}
 
 	private static void GetStandardInfo(Monster monster, HtmlNode standardInfo)
 	{
-		var typeInfo = standardInfo.ChildNodes[1];
+		var typeInfo = standardInfo.ChildNodes[0];
 		var cleanText = typeInfo.InnerText
-			.Replace("2x", "Size/Strength Double Strength")
-			.Replace("X2", "Size/Strength Double Strength")
-			.Replace("3x", "Size/Strength Triple Strength");
+			.Replace("2x", "Double Strength")
+			.Replace("X2", "Double Strength")
+			.Replace("3x", "Triple Strength");
+			
+		monster.Size = cleanText;
+
+		var levelRegex = @"(\d+)";
+		var levelRegexMatches = Regex.Match(standardInfo.ChildNodes[1].InnerText, levelRegex);
+
+		if (levelRegexMatches.Success)
+		{
+			monster.Level = int.Parse(levelRegexMatches.Groups[1].Value.Trim());
+		}
 		
-		var infoRegex = @"Size/Strength (.*); .*?(\d+).*; Role (.*); Type (.*)";
-		var infoRegexMatches = Regex.Match(cleanText, infoRegex);
-
-		if (infoRegexMatches.Success)
-		{
-			monster.Size = infoRegexMatches.Groups[1].Value.Trim();
-			monster.Level = int.Parse(infoRegexMatches.Groups[2].Value.Trim());
-			monster.Role = infoRegexMatches.Groups[3].Value.Trim();
-			monster.Type = infoRegexMatches.Groups[4].Value.Trim();
-		}
-		else
-		{
-			throw new Exception($"Couldn't parse Standard Info - '{cleanText}'");
-		}
-
-		monster.Initiative = int.Parse(standardInfo.ChildNodes[3].ChildNodes[1].InnerText.Replace("+", "").Trim());
+		monster.Role = standardInfo.ChildNodes[2].InnerText;
+		monster.Type = standardInfo.ChildNodes[3].InnerText;
 	}
 }
 
