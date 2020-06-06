@@ -16,6 +16,11 @@ A (mostly correct) scraped import of SRD monsters from https://www.13thagesrd.co
 Nearly 400 monsters is too many for me to review by hand, although I've done the best I can. Please report any data issues as a Github Issue. Thanks!
 
 ## Install
+
+```
+https://foundryvtt.com/packages/13th-age-srd-monsters/
+```
+
 ```
 https://raw.githubusercontent.com/cswendrowski/FoundryVTT-13th-Age-SRD/master/module.json
 ```

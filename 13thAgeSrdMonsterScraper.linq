@@ -72,11 +72,17 @@ public class SrdMonsterScraper
 			"Drow Sword Maiden"
 		};
 		
+		var incorrectMonsterTables = new List<string>() {
+			"Hoardsong Dragon (Red)",
+			"Greathoard Elder (Red)"
+		};
+		
 		var incorrectMonsterHeaders = new Dictionary<string, string>
 		{ 
 			{ "Ankheg", "Azer Soldier" },
 			{ "Basilisk", "Swarm of Bats" },
 			{ "Drider", "Drow Spider-Mage" },
+			{ "Ettin", "Death Blossom" },
 			{ "Harpy", "Watch Skull" },
 			{ "Hellhound", "Human Thug" },
 			{ "Hungry Star", "Five-Headed Hydra" },
@@ -85,6 +91,7 @@ public class SrdMonsterScraper
 			{ "Otyugh", "Pixie Warrior" },
 			{ "Owlbear", "Pixie Warrior" },
 			{ "Phase Spider", "Pixie Warrior" },
+			{ "Gargoyle" , "Gelatinous Tetrahedron"},
 			{ "Rakshasa", "Splotchcap" },
 			{ "Tarrasque", "Avenging Orb" },
 			{ "Troll", "Vampire" },
@@ -106,7 +113,7 @@ public class SrdMonsterScraper
 		};
 
 		var monsterNames = response.CssSelect("h4 > span").Select(x => x.InnerText)
-			//.Where(x => !incorrectMonsters.Contains(x))
+			.Where(x => !incorrectMonsterTables.Contains(x))
 			//.SkipWhile(x => x != "Wrecker").Skip(1)
 			.ToList();
 			
@@ -123,11 +130,11 @@ public class SrdMonsterScraper
 			//.SkipWhile(x => !x.InnerText.Contains("Size/Strength regular, large, or huge; Level level; Role role; Type type"))
 			.Skip(1)
 			.Where(x => x.InnerText.Contains("ACPDMDHP"))
-			.Where(x => !tablesToSkip.Any(toSkip => x.InnerText.StartsWith(toSkip)))
+			//.Where(x => !tablesToSkip.Any(toSkip => x.InnerText.StartsWith(toSkip)))
 			.TakeWhile( x => !x.InnerText.Contains("Section 15"))
 			.ToList();
 
-		//$"{monsterNames.Count} monster names, {monsterDetails.Count} details".Dump();
+		$"{monsterNames.Count} monster names, {monsterDetails.Count} details".Dump();
 
 		var failures = 0;
 		var toReturn = new List<Monster>();
@@ -143,7 +150,7 @@ public class SrdMonsterScraper
 			try
 			{
 				var monster = ScrapeMonster(monsterNames[x], monsterDetails[x]);
-				//monster.Dump();
+				monster.Dump();
 				toReturn.Add(monster);
 			}
 			catch (Exception e)
@@ -548,9 +555,7 @@ public class SrdMonsterScraper
 	{
 		var typeInfo = standardInfo.ChildNodes[0];
 		var cleanText = typeInfo.InnerText
-			.Replace("2x", "Double Strength")
-			.Replace("X2", "Double Strength")
-			.Replace("3x", "Triple Strength");
+			.Replace("X2", "2x");
 			
 		monster.Size = cleanText;
 
@@ -562,9 +567,14 @@ public class SrdMonsterScraper
 			monster.Level = int.Parse(levelRegexMatches.Groups[1].Value.Trim());
 		}
 		
-		monster.Role = standardInfo.ChildNodes[2].InnerText;
-		monster.Type = standardInfo.ChildNodes[3].InnerText;
+		monster.Role = UpperCaseFirstCharacter(standardInfo.ChildNodes[2].InnerText);
+		monster.Type = UpperCaseFirstCharacter(standardInfo.ChildNodes[3].InnerText);
 	}
+}
+
+public static string UpperCaseFirstCharacter(string toUppercase)
+{
+	return char.ToUpper(toUppercase[0]) + new string(toUppercase.Skip(1).ToArray());
 }
 
 public class Monster
@@ -654,15 +664,14 @@ public static class MonsterConverter
 			NullValueHandling = NullValueHandling.Ignore,
 			Formatting = Newtonsoft.Json.Formatting.Indented
 		};
-		JsonConvert.SerializeObject(convertedMonsters, jsonSerializationSettings).Dump();
+		var json = JsonConvert.SerializeObject(convertedMonsters, jsonSerializationSettings);
+		
+		File.WriteAllText(@"D:\Programming\Git\FoundryVTT-13th-Age-SRD\monsters.json", json);
 	}
 	
 	private static ActorArchmageData ConvertMonsterToArchmageData(Monster monster) {
 		var toReturn = new ActorArchmageData() {
 			data = new ActorData() {
-//				abilities = new Abilities() {
-//					
-//				},
 				attributes = new Attributes() {
 					ac = new Score("Armor Class", monster.AC) { baseScore = 10, min = 0 },
 					hp = new Score("Hit Points", monster.HP) { baseScore = 10, min = 0, max = monster.HP },
@@ -675,9 +684,16 @@ public static class MonsterConverter
 				{
 					level = new Score("Level", monster.Level) { min = 0, max = 12 },
 					resistance = new UserQuery.Value<string>("Resistance", monster.Resistance) { type = "String" },
-					vulnerability = new UserQuery.Value<string>("Vulnerability", monster.Vulnerability) { type = "String" }
+					vulnerability = new UserQuery.Value<string>("Vulnerability", monster.Vulnerability) { type = "String" },
+					size = new UserQuery.Value<string>("Size", monster.Size) { type = "String" },
+					role = new UserQuery.Value<string>("Role", monster.Role) { type = "String" },
+					type = new UserQuery.Value<string>("Type", monster.Type) { type = "String" },
 				}
 			},
+			token = new ActorToken() {
+				name = monster.Name
+			},
+			//name = $"{monster.Name} ({monster.Size} Level {monster.Level} {monster.Role}) [{monster.Type}]"
 			name = monster.Name
 		};
 		
@@ -752,7 +768,7 @@ public class ActorArchmageData {
 	public string folder => "RojSIAWRQfItUAUV";
 	public string img => "icons/svg/mystery-man.svg";
 	public List<Item> items { get; set; } = new List<Item>();
-	//public ActorToken token { get; set; }
+	public ActorToken token { get; set; }
 	public string type => "npc";
 	public string name { get; set; }
 }
@@ -803,11 +819,11 @@ public class Details {
 	
 	public Value<string> resistance { get; set; }
 	
-	public Label role => new Label("Role");
+	public Value<string> role { get; set; }
 	
-	public Label size => new Label("Size");
+	public Value<string> size { get; set; }
 	
-	public Label type => new Label("Type");
+	public Value<string> type { get; set; }
 	
 	public Value<string> vulnerability { get; set; }
 }
@@ -913,5 +929,5 @@ public class Score : Value<int>
 }
 
 public class ActorToken {
-	
+	public string name { get; set; } = string.Empty;
 }
