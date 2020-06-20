@@ -3,6 +3,13 @@
   "title": "13th Age SRD Monsters",
   "description": "A scraped import of SRD monsters from https://www.13thagesrd.com/monsters/ for https://gitlab.com/asacolips-projects/foundry-mods/archmage/tree/master",
   "version": "1.1.0",
+  "dependencies": [
+    {
+      "name": "archmage",
+      "manifest": "https://gitlab.com/asacolips-projects/foundry-mods/archmage/-/raw/1.5.0/system.json",
+      "version": "1.5.0"
+    }
+  ],
   "minimumCoreVersion": "0.4.4",
   "compatibleCoreVersion": "0.6.0",
   "author": "Cody Swendrowski <cody@swendrowski.us>",
