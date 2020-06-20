@@ -1,5 +1,5 @@
 ![](https://img.shields.io/badge/Foundry-v0.5.2-informational)
-![](https://img.shields.io/badge/13th%20Age-v1.4.0-informational)
+[![](https://img.shields.io/badge/FoundryGet-compatible-success)](https://github.com/cswendrowski/foundryget)
 ![](https://img.shields.io/badge/Monsters-359-success)
 [![](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-%243-orange)](https://www.buymeacoffee.com/T2tZvWJ)
 
@@ -17,10 +17,13 @@ Nearly 400 monsters is too many for me to review by hand, although I've done the
 
 ## Install
 
-```
-https://foundryvtt.com/packages/13th-age-srd-monsters/
-```
+Recommended: Using [FoundryGet](https://github.com/cswendrowski/foundryget)
 
 ```
-https://raw.githubusercontent.com/cswendrowski/FoundryVTT-13th-Age-SRD/master/module.json
+foundryget install https://raw.githubusercontent.com/cswendrowski/FoundryVTT-13th-Age-SRD/master/module.json
+```
+
+
+```
+https://foundryvtt.com/packages/13th-age-srd-monsters/
 ```
