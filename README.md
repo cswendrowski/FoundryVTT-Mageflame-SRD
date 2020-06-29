@@ -4,7 +4,7 @@
 [![](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-%243-orange)](https://www.buymeacoffee.com/T2tZvWJ)
 
 
-# FoundryVTT Mageflame SRD
+# FoundryVTT Mageflame SRD Monsters
 
 A (mostly correct) scraped import of SRD monsters from https://www.13thagesrd.com/monsters/ for https://gitlab.com/asacolips-projects/foundry-mods/archmage/tree/master provided under the Open Game License
 
